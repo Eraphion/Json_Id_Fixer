@@ -3,17 +3,36 @@ using System.IO;
 
 namespace JSONEditor
 {
+
+    class IdGenerator
+    {
+        private long _id;
+        public IdGenerator()
+        {
+            _id = 1;
+        }
+        public void Reset()
+        {
+            _id = 1;
+        }
+        public long Next()
+        {
+            return _id++;
+        }
+    }
+
     class Program
     {
         static readonly string ID = "\"id\"";
         static readonly string outputFolderName = "fixed";
         static readonly string inputFolderName = "input";
 
-        static void ParseJson(dynamic records, string parentId)
+
+        static void ParseJson(dynamic records, IdGenerator gen, long? parentId)
         {
             foreach (var record in records)
             {
-                string fixedId = "undefined";
+                long? fixedId = null;
                 record.parent_id = parentId;
                 foreach (var key in record)
                 {
@@ -22,14 +41,13 @@ namespace JSONEditor
                     {
                         if (field.GetType() == typeof(Newtonsoft.Json.Linq.JArray))
                         {
-                            ParseJson(field, fixedId);
+                            ParseJson(field, gen, fixedId);
                         }
                         else
                         {
                             if (keyAsString.StartsWith(ID))
                             {
-                                string stringWithID = field.ToString();
-                                fixedId = stringWithID.Replace(".", "");
+                                fixedId = gen.Next();
                                 field.Value = fixedId;
                             }
                         }
@@ -43,7 +61,8 @@ namespace JSONEditor
             string JsonAsStrings = File.ReadAllText(JsonName);
             dynamic json = JsonConvert.DeserializeObject(JsonAsStrings);
 
-            ParseJson(json, "null");
+            var gen = new IdGenerator();
+            ParseJson(json, gen, null);
 
             var toJson = JsonConvert.SerializeObject(json);
             Directory.CreateDirectory(outputFolderName);
