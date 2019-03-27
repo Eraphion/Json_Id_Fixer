@@ -9,10 +9,12 @@ namespace JSONEditor
         static readonly string outputFolderName = "fixed";
         static readonly string inputFolderName = "input";
 
-        static void ParseJson(dynamic records)
+        static void ParseJson(dynamic records, string parentId)
         {
             foreach (var record in records)
             {
+                string fixedId = "undefined";
+                record.parent_id = parentId;
                 foreach (var key in record)
                 {
                     string keyAsString = key.ToString();
@@ -20,15 +22,15 @@ namespace JSONEditor
                     {
                         if (field.GetType() == typeof(Newtonsoft.Json.Linq.JArray))
                         {
-                            ParseJson(field);
+                            ParseJson(field, fixedId);
                         }
                         else
                         {
                             if (keyAsString.StartsWith(ID))
                             {
                                 string stringWithID = field.ToString();
-                                string fixedString = stringWithID.Replace(".", "");
-                                field.Value = fixedString;
+                                fixedId = stringWithID.Replace(".", "");
+                                field.Value = fixedId;
                             }
                         }
                     }
@@ -41,7 +43,7 @@ namespace JSONEditor
             string JsonAsStrings = File.ReadAllText(JsonName);
             dynamic json = JsonConvert.DeserializeObject(JsonAsStrings);
 
-            ParseJson(json);
+            ParseJson(json, "null");
 
             var toJson = JsonConvert.SerializeObject(json);
             Directory.CreateDirectory(outputFolderName);
